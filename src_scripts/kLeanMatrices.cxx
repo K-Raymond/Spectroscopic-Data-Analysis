@@ -988,9 +988,10 @@ int main(int argc, char **argv) {
         myPPG = nullptr;
     }
 
+    TFile *pResFile = nullptr;
     if ( argc > 2 ) // Check if the extra file is tacked on
-        TFile *pResFile = TFile( argv[2], "READ");
-    if ( pResfile != nullptr )
+        pResFile = new TFile( argv[2], "READ");
+    if ( pResFile != nullptr )
     {
         pResFile->cd();
         if (pResFile->cd("Energy_Residuals")) {
