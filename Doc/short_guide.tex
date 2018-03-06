@@ -15,7 +15,7 @@
 %%% PAGE DIMENSIONS
 \usepackage{geometry} % to change the page dimensions
 \geometry{a4paper} % or letterpaper (US) or a5paper or....
-\geometry{margin=2in} % for example, change the margins to 2 inches all round
+\geometry{margin=1in} % for example, change the margins to 2 inches all round
 % \geometry{landscape} % set up the page for landscape
 %   read geometry.pdf for detailed page layout information
 
@@ -63,6 +63,7 @@
   commentstyle=\color{green}\ttfamily,
   morecomment=[l][\color{magenta}]{\#},
   columns=fullflexible,
+  showstringspaces=false,
   %frame=single,
   breaklines=true,
   postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
@@ -111,21 +112,39 @@ Producing a final .root file that contains histograms and matricies for analysiz
 When a snippit of code begins with the \texttt{\$} character ismeans to run it in a shell prompt, or coded into a bash script. Lines begining with \texttt{GRSI []} are intended to be used with GRSISort's CLang interpriter, and similarly can be used in \texttt{.cxx} scripts.
 Files that end in \texttt{.cxx} should have a compiled portion can be called by \texttt{\$ <name>}.
 
-\section{Data Analysis}
+\subsection{Unpacking into GRSISort}
+
+\begin{enumerate}
+\item
+(Optional) Download and Compile ROOT and GRSISort using scripts contained in \texttt{setup\_scripts}
+
+\item
+Copy all files that are not shared by GRSISort into \texttt{GRSISort/scripts}
+
+\item
+Place calibration runs into \texttt{runs\_cal} and exprimental runs into \texttt{runs\_data}
+
+\item
+Copy any exsiting calibration data into \texttt{calibrations}
+
+\end{enumerate}
+
+\section{Creating Calibration Files}
 
 \subsection{First sort of data}
-First we must sort our data, this can be acomplished with:
+The midas files corrisponding to the calibration runs (usually the first runs done in an experiment) need to be sorted first.
 
 \begin{lstlisting}[language=c++]
 $  grsisort -laq -suppress-errors -is-correcting-cross-talk -sort-depth=70000000 /dir/to/midas/file
 \end{lstlisting}
 
-See the GRSISort wiki for an explanation of the flags used.
-If we have already have rough gain match, we can apply it in the above method by appending the appropirate \texttt{.cal} file to the command above.
+See the GRSISort wiki for an explanation of the flags used above.
+
+If there is an already existing \texttt{.cal} file with rough gain match coefficencents (ie. on a $^{60}$Co source), we can apply it in the above method by appending the appropirate \texttt{.cal} file to the command above.
 
 \subsection{Applying a strict linear gain match}
 
-This step is important for setting up the next few corrections.
+This step is important for setting up the next corrections.
 Using \texttt{kLinearGainMatch.cxx} we need to gain match two of our strongest peaks.
 These will become our base-line points for generating the energy residuals.
 Line 60 need to be changed to reflect the energy of the gamma rays used for calibration.
@@ -142,27 +161,14 @@ To get a more comprehesive overview, \texttt{kMakeCalMatricies.cxx} can be used 
 \subsection{Calculating Residuals}
 
 For this step we will use the script \texttt{kResidualCalculator.cxx}.
-This scripts takes any number of calibration peaks to calculate what the true response is of the detector.
-Energies should be selected from well known literature values, but the more peaks used for this calibration, the better.
-The energies should be hard coded into lines \$\$.
+This scripts takes any number of calibration peaks to calculate what the true response is of the DAQ system.
+Energies should be selected from well known literature values, and the more peaks used for this calibration, the better.
+The energies should be hard coded into lines 105 and 121.
+This script will spit out a \texttt{residuals.root} file that contains the \texttt{TGraph} files that need to imported into our runtime scripts.
 
-After running the script, the \texttt{TSpines}/\texttt{TGraphs} will be saved in the analyzed \texttt{.root} file, including a \texttt{TCanvas} object that shows a summary of each crystal. To access the residuals, use something similar to the following code:
-\begin{lstlisting}[language=c++,numbers=left, xleftmargin=5.0ex,caption=Example residual code for loading residuals]
-    if( gFile->cd("Energy_Residuals") ) {
-        printf("Energy residual calibration data found. Loading...\n");
+The \texttt{.root} file will contain a \texttt{TCanvas} object that shows a summary of each crystal.
+To access the residuals, and how to use them will be explained later in this doccument.
 
-        TGraph* TempResidual;
-        for( int i = 1 ; i <= 64 ; i++ ) {
-            gDirectory->GetObject(Form("Graph;%d",i), TempResidual);
-            pGriff->LoadEnergyResidual( i-1, TempResidual);
-        }
-        gFile->cd(); // Return to the top directory
-        printf("Done.\n");
-\end{lstlisting}
-
-For examples of use, see scripts like \texttt{LeanMatricies.cxx} in which the script has been split up into two sections of code.
-One within the outer main function, and then within the inner main function, and the residuals are stored in a \texttt{TSpline} vector.
-When working with selector scripts, the code snippit has been placed in the \texttt{InitializeBranches} member function of the selector class, within the corrisponding \texttt{.h} file.
 
 \subsection{Cross Talk Corrections \protect\footnote{Addopted from Kevin Ortner} }
 
@@ -182,6 +188,62 @@ Which spits out a cal file called \texttt{<name>.cal}. We can ether load this fi
  GRSI [] TChannel::ReadCalFile("ct_correction.cal")
  GRSI [] TChannel::WriteToRoot()
 \end{lstlisting}
-Otherwise, the above can be setup to automatically happen in \texttt{GriffinCTFix.cxx} by adding the above code to the last lines of the main function.
+Otherwise, the above can be setup to automatically happen in \texttt{GriffinCTFix.cxx} by adding the above code to the last few lines of the main function.
+
+\section{Applying Corrections to Analysis}
+
+Now that all the calibration data has been calculated, it needs to be applied to the rest of the data.
+
+\subsection{Sorting the run data}
+
+Much like the calibration data, the data needs to be sorted from the midas files.
+This time, all the calibration files should prexist.
+Much like before:
+
+\begin{lstlisting}[language=c++]
+$  grsisort <flags> <midas files> ct_correction.cal <linear gain match>.cal
+\end{lstlisting}
+
+
+\subsection{Residuals}
+
+To use the residuals we calculated previously we can use a code snippit such as,
+\begin{lstlisting}[language=c++,numbers=left, xleftmargin=5.0ex,caption=Example residual code for loading residuals]
+    if( gFile->cd("Energy_Residuals") ) {
+        printf("Energy residual calibration data found. Loading...\n");
+
+        TGraph* TempResidual;
+        for( int i = 1 ; i <= 64 ; i++ ) {
+            gDirectory->GetObject(Form("Graph;%d",i), TempResidual);
+            pGriff->LoadEnergyResidual( i-1, TempResidual);
+        }
+        gFile->cd(); // Return to the top directory
+        printf("Done.\n");
+\end{lstlisting}
+Some explinations of the above,
+\begin{description}
+\item [gFile]
+This pointer points to the current file opened. This needs to be changed to the variable that points to the \texttt{residuals.root} file.
+\item [gDirectory]
+Similar to gFile, this points to the current directory inside the root file.
+\item [pGriff]
+Pointer to TGriffin inside the \texttt{<data>.root} file
+\end{description}
+For examples of use, see included scripts like \texttt{LeanMatricies.cxx} in which the script has been split up into two sections of code.
+One within the outer main function, and then within the inner main function, and the residuals are stored in a \texttt{TGraph} vector.
+When working with selector scripts, the code snippit has been placed in the \texttt{InitializeBranches} member function of the selector class, within the corrisponding \texttt{.h} file.
+
+There are now two methods of constructing the analysis matricies that will be used put the data into a human readable form.
+
+\begin{enumerate}
+\item  \texttt{kLeanMatricies.cxx}
+\item Selector script
+\end{enumerate}
+
+Both methods are based on the same process. To use kLeanMatricies do the following,
+
+\begin{lstlisting}{language=bash}
+$ kLeanMatricies.cxx <analysis.root> residuals.root
+\end{lstlisting}
 
 \end{document}

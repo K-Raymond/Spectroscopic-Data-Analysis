@@ -23,7 +23,7 @@
  * Note that the TGraphs are stored from 1->64, but they are loaded in through
  * LoadEnergyResidual from 0->63.
 
-    if( gFile->cd("Energy_Residuals") ) {
+    if( gResidualFile->cd("Energy_Residuals") ) {
         printf("Energy residual calibration data found. Loading...\n");
 
         TGraph* TempResidual;
@@ -34,7 +34,15 @@
         gFile->cd(); // Return to the top directory
         printf("Done.\n");
     }
- */
+
+    Any scripts that use the above code will need to open the resiual file residuals.root.
+    This can be done as another argument to the script, ie
+    LeanMatricies <rootfile> residuals.root
+
+    The file can be accessed by looking at argv[2] in this instance. Thus to load
+    the residual file we could just:
+    TFile *gResidualFile = TFile(argv[2], READ);
+*/
 
 #include <algorithm>
 #include <cmath>
@@ -268,8 +276,10 @@ int main(int argc, char *argv[]) {
     // We want to make an extra directory to store all of our energy
     // residuals in. The assumption is made that these TGraphs are
     // written in order.
-    //
-    // See sample_load_code.cxx for details on how to load these.
+
+    pFile->Close();
+    // Create Output file
+    pFile = new TFile("resdiuals.root", "RECREATE");
 
     printf("Writing Non-Linarities\n");
     TDirectory* NonLinearDirectory;
@@ -319,5 +329,4 @@ int main(int argc, char *argv[]) {
     // Project Matrix
     // Cleanup
     delete mat_en;
-    pFile->Close();
 }
