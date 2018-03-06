@@ -988,16 +988,22 @@ int main(int argc, char **argv) {
         myPPG = nullptr;
     }
 
-    file->cd();
-    if (file->cd("Energy_Residuals")) {
-        printf("Energy residuals found, loading...\n");
-        TGraph* TempGraph;
-        for (int k = 0 ; k < 64; k++) {
-            gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
-            ResidualVec.push_back( TempGraph );
+    if ( argc > 2 ) // Check if the extra file is tacked on
+        TFile *pResFile = TFile( argv[2], "READ");
+    if ( pResfile != nullptr )
+    {
+        pResFile->cd();
+        if (pResFile->cd("Energy_Residuals")) {
+            printf("Energy residuals found, loading...\n");
+            TGraph* TempGraph;
+            for (int k = 0 ; k < 64; k++) {
+                gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
+                ResidualVec.push_back( TempGraph );
+            }
+        } else {
+            printf("No energy residuals found\n");
         }
-    } else {
-        printf("No energy residuals found\n");
+        pResFile->Close();
     }
 
     // Get run info from File
