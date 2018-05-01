@@ -27,6 +27,7 @@ class CrossTalk : public TGRSISelector {
 public:
    TGriffin* fGrif;
    TSceptar* fScep;
+   std::vector<TGraph*> fResidualVec;
 
    CrossTalk(TTree* /*tree*/ = 0) : TGRSISelector(), fGrif(0), fScep(0) { SetOutputPrefix("Crosstalk"); }
    virtual ~CrossTalk() {}
@@ -45,7 +46,26 @@ void CrossTalk::InitializeBranches(TTree* tree)
 {
    if(!tree) return;
    tree->SetBranchAddress("TGriffin", &fGrif);
-  // tree->SetBranchAddress("TSceptar", &fScep);
+   //tree->SetBranchAddress("TSceptar", &fScep);
+    TFile *pResFile = nullptr;
+    if ( argc > 2 )
+        pResFile = new TFile( "residuals.root", "READ");
+    if ( pResFile != nullptr ) {
+        pResFile->cd();
+        if ( pResFile->cd("Energy_Residuals") ) {
+            printf("Energy residuals found, loading...\n");
+            TGraph* TempGraph;
+            for (int k = 0 ; k < 64; k++) {
+                gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
+                ResidualVec.push_back( TempGraph );
+            }
+        } else {
+            printf("No energy residuals found\n");
+        }
+        pResFile->Close();
+    }
+
+
 }
 
 #endif // #ifdef CrossTalk_cxx
