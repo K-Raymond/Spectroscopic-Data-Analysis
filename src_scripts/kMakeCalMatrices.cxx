@@ -295,17 +295,23 @@ int main(int argc, char **argv) {
             printf("Failed to find PPG information in file '%s'!\n",argv[1]);
             return 1;
            }*/
-
-    file->cd();
-    if (file->cd("Energy_Residuals")) {
-        printf("Energy residuals found, loading...\n");
-        TGraph* TempGraph;
-        for (int k = 0 ; k < 64; k++) {
-            gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
-            ResidualVec.push_back( TempGraph );
+    
+    TFile *pResFile = nullptr;
+    if ( argc > 2 )
+        pResFile = new TFile( argv[2], "READ");
+    if ( pResFile != nullptr ) {
+        pResFile->cd();
+        if ( pResFile->cd("Energy_Residuals") ) {
+            printf("Energy residuals found, loading...\n");
+            TGraph* TempGraph;
+            for (int k = 0 ; k < 64; k++) {
+                gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
+                ResidualVec.push_back( TempGraph );
+            }
+        } else {
+            printf("No energy residuals found\n");
         }
-    } else {
-        printf("No energy residuals found\n");
+        pResFile->Close();
     }
 
     // Get run info from File
@@ -327,19 +333,15 @@ int main(int argc, char **argv) {
     TList *list; // We return a list because we fill a bunch of TH1's and shove
                  // them into this list.
     TFile *outfile;
-    if (argc < 3) {
-        if (!runInfo) {
-            printf(
-                "Could not find run info, please provide output file name\n");
-            return 0;
-        }
-        int runnumber = runInfo->RunNumber();
-        int subrunnumber = runInfo->SubRunNumber();
-        outfile = new TFile(
-            Form("calmatrix%05d_%03d.root", runnumber, subrunnumber), "recreate");
-    } else {
-        outfile = new TFile(argv[2], "recreate");
+    if (!runInfo) {
+        printf(
+            "Could not find run info, please provide output file name\n");
+        return 0;
     }
+    int runnumber = runInfo->RunNumber();
+    int subrunnumber = runInfo->SubRunNumber();
+    outfile = new TFile(
+        Form("calmatrix%05d_%03d.root", runnumber, subrunnumber), "recreate");
 
     std::cout << argv[0] << ": starting Analysis after " << w.RealTime()
               << " seconds" << std::endl;

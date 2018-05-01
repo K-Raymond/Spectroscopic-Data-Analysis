@@ -1043,19 +1043,15 @@ int main(int argc, char **argv) {
     }
 
     TFile *outfile;
-    if (argc < 3) {
-        if (runInfo == nullptr) {
-            printf(
-                "Could not find run info, please provide output file name\n");
-            return 0;
-        }
-        int runnumber = runInfo->RunNumber();
-        int subrunnumber = runInfo->SubRunNumber();
-        outfile = new TFile(
-            Form("matrix%05d_%03d.root", runnumber, subrunnumber), "recreate");
-    } else {
-        outfile = new TFile(argv[2], "recreate");
+    if (runInfo == nullptr) {
+        printf(
+            "Could not find run info, please provide output file name\n");
+        return 0;
     }
+    int runnumber = runInfo->RunNumber();
+    int subrunnumber = runInfo->SubRunNumber();
+    outfile = new TFile(
+        Form("matrix%05d_%03d.root", runnumber, subrunnumber), "recreate");
 
     printf("Writing to File: " DYELLOW "%s" RESET_COLOR "\n",
            outfile->GetName());

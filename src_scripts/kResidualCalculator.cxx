@@ -185,11 +185,13 @@ int main(int argc, char *argv[]) {
     // Load in Energy data
     if (gIsFragmentFile)
         pTree->Project("mat_en", "TFragment.GetEnergy():"
-                                 "TFragment.GetChannelNumber()");
+                                 "TFragment.GetChannelNumber()",
+                                 "TGriffin.GetMultiplicity()==1");
     else
         pTree->Project("mat_en",
                        "TGriffin.fGriffinLowGainHits.GetEnergy():"
-                       "TGriffin.fGriffinLowGainHits.GetChannel().fNumber");
+                       "TGriffin.fGriffinLowGainHits.GetChannel().fNumber",
+                       "TGriffin.GetMultiplicity()==1");
 
     // Make a list that will store all the energy differences
     TList* LNonlinearitiesGraphs = new TList();
@@ -279,7 +281,7 @@ int main(int argc, char *argv[]) {
 
     pFile->Close();
     // Create Output file
-    pFile = new TFile("resdiuals.root", "RECREATE");
+    pFile = new TFile("residuals.root", "RECREATE");
 
     printf("Writing Non-Linarities\n");
     TDirectory* NonLinearDirectory;
