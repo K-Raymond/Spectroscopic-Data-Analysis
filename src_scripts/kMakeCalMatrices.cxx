@@ -31,10 +31,13 @@
 #include "TTreeIndex.h"
 #include "TVectorD.h"
 #include "TVirtualIndex.h"
+#include "TGRSIOptions.h"
+#include "THnSparse.h"
 
 #ifndef __CINT__
 #include "TGriffin.h"
 #include "TSceptar.h"
+#include "TGRSISelector.h"
 #endif
 
 std::vector<TGraph*> ResidualVec;
@@ -61,7 +64,8 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
     if (runInfo == NULL) {
         return NULL;
     }
-
+    
+    
     ///////////////////////////////////// SETUP
     //////////////////////////////////////////
     // gamma histogram limits
@@ -72,7 +76,7 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
     // Coincidence Parameters
     // times in ns
     Double_t ggTlow = 0.;
-    Double_t ggThigh = 500.;
+    Double_t ggThigh = 350.;
 
     Double_t ggBGlow = 1000.;
     Double_t ggBGhigh = 2000.;
@@ -109,6 +113,9 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
     TH1D *Singles[64];
     TH1D *Addback[16];
 
+    TH2D *ggsummat = new TH2D("ggsummat","#gamma-#gamma matrix 180 degrees",nofBins, low, high,nofBins, low, high); list->Add(ggsummat);
+
+
     for (int i = 0; i < 64; i++) {
         char name[128];
 
@@ -136,10 +143,14 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
     TGriffin *grif = 0;
     tree->SetBranchAddress("TGriffin",
                            &grif); // We assume we always have a Griffin branch
-
-    printf("Loading in energy residuals\n");
-    for (int k = 0; k < 64; k++) {
-        grif->LoadEnergyResidual(k+1, ResidualVec[k]);
+            TGRSIOptions::AnalysisOptions()->SetCorrectCrossTalk(true);
+        //TGRSIOptions::AnalysisOptions()->IsCorrectingCrossTalk();
+    //grif->ResetFlags();
+    if( ResidualVec.size() == 64 ) {
+        printf("Loading in energy residuals\n");
+        for (int k = 0; k < 64; k++) {
+            grif->LoadEnergyResidual(k+1, ResidualVec[k]);
+        }
     }
 
     // Indices of the two hits being compared
@@ -165,9 +176,9 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
 
         // loop over the gammas in the event packet
         for (one = 0; one < (int)grif->GetMultiplicity(); ++one) {
-
+                
             timeinrun->Fill(grif->GetHit(one)->GetTime());
-
+                if(grif->GetGriffinHit(one)->GetKValue() != 700) continue;
             int crystal = grif->GetGriffinHit(one)->GetCrystal() +
                           (grif->GetGriffinHit(one)->GetDetector() - 1) * 4;
 
@@ -183,13 +194,13 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
 
             } // crystal loop
 
-            /*         // We now want to loop over any other gammas in this
-               packet
+                     // We now want to loop over any other gammas in this
+               //packet
                      for(two = 0; two < (int) grif->GetMultiplicity(); ++two) {
                         if(two == one) continue; //If we are looking at the same
-               gamma we don't want to call it a coincidence
+               //gamma we don't want to call it a coincidence
 
-                        ggTimeDiff->Fill(TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime()));
+                        //ggTimeDiff->Fill(TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime()));
 
                         if(ggTlow <=
                TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
@@ -197,33 +208,38 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
                TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
                < ggThigh) {
                            //If they are close enough in time, fill the
-               gamma-gamma matrix. This will be symmetric because we are doing a
-               double loop over gammas
-                           ggmatrix->Fill(grif->GetGriffinHit(one)->GetEnergy(),
+               //gamma-gamma matrix. This will be symmetric because we are doing a
+               //double loop over gammas
+               
+               if(grif->GetGriffinHit(one)->GetPosition()               //180 sum coincidence
+                             .Angle(grif->GetGriffinHit(two)->GetPosition()) 
+                           > 3.13)
+               
+                           ggsummat->Fill(grif->GetGriffinHit(one)->GetEnergy(),
                grif->GetGriffinHit(two)->GetEnergy());
 
                         } // gg prompt coincidences
 
-                        if(ggBGlow <=
-               TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
-               &&
-               TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
-               < ggBGhigh) {
+                //        if(ggBGlow <=
+              // TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
+             //  &&
+             //  TMath::Abs(grif->GetGriffinHit(two)->GetTime()-grif->GetGriffinHit(one)->GetTime())
+             //  < ggBGhigh) {
                            //If they are not close enough in time, fill the
-               time-random gamma-gamma matrix. This will be symmetric because we
-               are doing a double loop over gammas
+               //time-random gamma-gamma matrix. This will be symmetric because we
+               //are doing a double loop over gammas
                         } // gg time random coincidences
 
                      } // gg second gamma loop
-            */
+            
 
-        } // g first gamma loop
+         // g first gamma loop
 
         // loop over the addbacks in the event packet
         for (one = 0; one < (int)grif->GetAddbackMultiplicity(); ++one) {
 
             int detector = grif->GetAddbackHit(one)->GetDetector() - 1;
-
+                if(grif->GetAddbackHit(one)->GetKValue() != 700) continue;
             // We want to put every gamma ray in this event into the singles
             Addback_total->Fill(grif->GetAddbackHit(one)->GetEnergy());
             Addback_vs_Detector->Fill(detector,
@@ -278,7 +294,8 @@ int main(int argc, char **argv) {
     w.Start();
 
     TFile *file = new TFile(argv[1]);
-
+    //TGRSIOptions::Get()->ReadFromFile(file);
+    //TGRSIOptions::AnalysisOptions()->SetCorrectCrossTalk(true);
     if (file == NULL) {
         printf("Failed to open file '%s'!\n", argv[1]);
         return 1;
@@ -295,13 +312,14 @@ int main(int argc, char **argv) {
             printf("Failed to find PPG information in file '%s'!\n",argv[1]);
             return 1;
            }*/
-    
+
     TFile *pResFile = nullptr;
-    if ( argc > 2 )
+    if ( argc > 2 ) // Check if the extra file is tacked on
         pResFile = new TFile( argv[2], "READ");
-    if ( pResFile != nullptr ) {
+    if ( pResFile != nullptr )
+    {
         pResFile->cd();
-        if ( pResFile->cd("Energy_Residuals") ) {
+        if (pResFile->cd("Energy_Residuals")) {
             printf("Energy residuals found, loading...\n");
             TGraph* TempGraph;
             for (int k = 0 ; k < 64; k++) {
@@ -316,6 +334,7 @@ int main(int argc, char **argv) {
 
     // Get run info from File
     TGRSIRunInfo *runInfo = (TGRSIRunInfo *)file->Get("TGRSIRunInfo");
+    TGRSIRunInfo::Get()->SetRunInfo(runInfo);
     if (runInfo == NULL) {
         printf("Failed to find run information in file '%s'!\n", argv[1]);
         return 1;
@@ -330,10 +349,12 @@ int main(int argc, char **argv) {
 
     // Get the TGRSIRunInfo from the analysis Tree.
 
+
     TList *list; // We return a list because we fill a bunch of TH1's and shove
                  // them into this list.
+                 
     TFile *outfile;
-    if (!runInfo) {
+    if (runInfo == nullptr) {
         printf(
             "Could not find run info, please provide output file name\n");
         return 0;
@@ -341,8 +362,23 @@ int main(int argc, char **argv) {
     int runnumber = runInfo->RunNumber();
     int subrunnumber = runInfo->SubRunNumber();
     outfile = new TFile(
-        Form("calmatrix%05d_%03d.root", runnumber, subrunnumber), "recreate");
-
+        Form("matrix%05d_%03d.root", runnumber, subrunnumber), "recreate");             
+                 
+/*    TFile *outfile;
+    if (argc < 3) {
+        if (!runInfo) {
+            printf(
+                "Could not find run info, please provide output file name\n");
+            return 0;
+        }
+        int runnumber = runInfo->RunNumber();
+        int subrunnumber = runInfo->SubRunNumber();
+        outfile = new TFile(
+            Form("calmat%05d_%03d.root", runnumber, subrunnumber), "recreate");
+    } else {
+        outfile = new TFile(argv[2], "recreate");
+    }
+*/
     std::cout << argv[0] << ": starting Analysis after " << w.RealTime()
               << " seconds" << std::endl;
     w.Continue();
