@@ -279,6 +279,7 @@ int main(int argc, char *argv[]) {
     // residuals in. The assumption is made that these TGraphs are
     // written in order.
 
+    printf("All Residuals generated, saving...");
     pFile->Close();
     // Create Output file
     pFile = new TFile("residuals.root", "RECREATE");
@@ -327,6 +328,8 @@ int main(int argc, char *argv[]) {
     c1->Update();
     c1->Draw();
     c1->Write("Non-Linearity Overview");
+    
+    pFile->Close();
 
     // Project Matrix
     // Cleanup
