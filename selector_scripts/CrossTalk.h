@@ -14,7 +14,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "THnSparse.h"
-#include "TMVA/TSpine1.h"
+#include "TMVA/TSpline1.h"
 
 // Header file for the classes stored in the TTree if any.
 #include "TGriffin.h"
@@ -56,7 +56,7 @@ void CrossTalk::InitializeBranches(TTree* tree)
             TGraph* TempGraph;
             for (int k = 0 ; k < 64; k++) {
                 gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
-                ResidualVec.push_back( new TMVA::TSpline1("", TempGraph) );
+                fResidualVec.push_back( new TMVA::TSpline1("", TempGraph) );
             }
         } else {
             printf("No energy residuals found\n");
