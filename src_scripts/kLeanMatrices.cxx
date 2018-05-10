@@ -33,6 +33,7 @@
 #include "TTreeIndex.h"
 #include "TVectorD.h"
 #include "TVirtualIndex.h"
+#include "TMVA/TSpline1.h"
 
 #ifndef __CINT__
 #include "TGriffin.h"
@@ -57,7 +58,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<TGraph*> ResidualVec;
+std::vector<TMVA::TSpline1*> ResidualVec;
 
 // This function gets run if running interpretively
 // Not recommended for the analysis scripts
@@ -999,7 +1000,7 @@ int main(int argc, char **argv) {
             TGraph* TempGraph;
             for (int k = 0 ; k < 64; k++) {
                 gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
-                ResidualVec.push_back( TempGraph );
+                ResidualVec.push_back( new TMVA::TSpline1("", TempGraph) );
             }
         } else {
             printf("No energy residuals found\n");

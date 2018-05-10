@@ -33,6 +33,7 @@
 #include "TVirtualIndex.h"
 #include "TGRSIOptions.h"
 #include "THnSparse.h"
+#include "TSpline.h"
 
 #ifndef __CINT__
 #include "TGriffin.h"
@@ -40,7 +41,7 @@
 #include "TGRSISelector.h"
 #endif
 
-std::vector<TGraph*> ResidualVec;
+std::vector<TSpline*> ResidualVec;
 
 // This function gets run if running interpretively
 // Not recommended for the analysis scripts
@@ -324,7 +325,7 @@ int main(int argc, char **argv) {
             TGraph* TempGraph;
             for (int k = 0 ; k < 64; k++) {
                 gDirectory->GetObject(Form("Graph;%d", k + 1), TempGraph);
-                ResidualVec.push_back( TempGraph );
+                ResidualVec.push_back( new TMVA::TSpline1("", TempGraph );
             }
         } else {
             printf("No energy residuals found\n");

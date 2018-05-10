@@ -93,11 +93,12 @@ int main(int argc, char *argv[]) {
 
     if (gIsCalibration)
         pTree->Project("mat_en",
-                        "TFragment.GetEnergy():TFragment.GetChannelNumber()");
+                        "TFragment.GetEnergy():TFragment.GetChannelNumber()",
+                        "TGriffin.GetMultiplicity()==1");
 	else
         pTree->Project("mat_en", "TGriffin.fGriffinLowGainHits.GetEnergy():"
-                                  "TGriffin.fGriffinLowGainHits.GetChannel()."
-                                  "fNumber"); // for cal files
+                                  "TGriffin.fGriffinLowGainHits.GetChannel().fNumber",
+                                  "TGriffin.GetMultiplicity()==1"); // for cal files
     for (int i = 0; i < 64 ; i++ ) {
         pChannel = TChannel::GetChannelByNumber(i);
         TH1D *h_en = mat_en->ProjectionY(Form("h_%.2i", i), i + 1, i + 1);

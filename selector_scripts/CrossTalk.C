@@ -25,9 +25,10 @@ bool PromptCoincidence(TGriffinHit* one, TGriffinHit* two)
 }
 
 void CrossTalk::CreateHistograms() {
-    for ( int k=0; k<64 ; k++)
-        fGrif->LoadEnergyResidual(k+1, fResidualVec[k]);
-
+    if ( fResidualVec.size() == 64 ) {
+        for ( int k=0; k<64 ; k++)
+            fGrif->LoadEnergyResidual(k+1, fResidualVec[k]);
+    }
 	fH2.clear();
 	for(int det_num=1; det_num<=16; ++det_num){
 		std::string aedet_str = Form("aEdet%d",det_num);
