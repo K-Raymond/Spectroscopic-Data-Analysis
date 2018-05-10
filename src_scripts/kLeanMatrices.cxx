@@ -352,6 +352,7 @@ TList *LeanMatrices(TTree *tree, TPPG *ppg, TGRSIRunInfo *runInfo,
     TSceptar *scep = nullptr;
     tree->SetBranchAddress("TGriffin",
                            &grif); // We assume we always have a Griffin
+    TGRSIOptions::AnalysisOptions()->SetCorrectCrossTalk(true); // Correct for cross talk
 
     printf("Loading in energy residuals\n");
     if( ResidualVec.size() > 0 ) {
