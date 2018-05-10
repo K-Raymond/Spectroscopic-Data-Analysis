@@ -34,6 +34,7 @@
 #include "TGRSIOptions.h"
 #include "THnSparse.h"
 #include "TSpline.h"
+#include "TMVA/TSpline1.h"
 
 #ifndef __CINT__
 #include "TGriffin.h"
